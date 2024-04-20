@@ -1,7 +1,7 @@
 package main
 
 import (
-	//"fmt"
+	"database/sql"
 	"log"
 	"net/http"
 	"os"
@@ -9,15 +9,36 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
+	"github.com/scaranaraa/rss_aggregator/internal/database"
 )
+
+type apiConfig struct {
+	DB *database.Queries
+}
 
 func main(){
 
 	godotenv.Load(".env")
 
 	port := os.Getenv("PORT")
+	dbURL := os.Getenv("DB_URL")
+
+	if dbURL == "" {
+		log.Fatal("DB_URL not set")
+	}
 	if port == "" {
 		log.Fatal("Port not set")
+	}
+
+	conn, err1  := sql.Open("postgres",dbURL)
+	if err1 != nil {
+		
+		log.Fatal("Cant connect to database: ",err1)
+	}
+
+	apiCfg := apiConfig{
+		DB: database.New(conn),
 	}
 
 	router := chi.NewRouter()
@@ -36,6 +57,7 @@ func main(){
 	v1Router.Get("/healthz",handlerReadiness)
 	router.Mount("/v1",v1Router)
 	v1Router.Get("/err", handleErr)
+	v1Router.Post("/users",apiCfg.handlerCreateUser)
 	srv := &http.Server{
 		Handler: router,
 		Addr: ":" + port,
