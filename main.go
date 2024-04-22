@@ -58,6 +58,7 @@ func main(){
 	router.Mount("/v1",v1Router)
 	v1Router.Get("/err", handleErr)
 	v1Router.Post("/users",apiCfg.handlerCreateUser)
+	v1Router.Get("/users",apiCfg.handlerGetUser)
 	srv := &http.Server{
 		Handler: router,
 		Addr: ":" + port,
